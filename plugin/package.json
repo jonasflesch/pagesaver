@@ -1,8 +1,10 @@
 {
-  "name": "plugin",
-  "fullName": "plugin",
-  "description": "a basic add-on",
-  "author": "",
-  "license": "MPL 2.0",
-  "version": "0.1"
+    "name": "pagesaver", 
+    "license": "MPL 2.0", 
+    "author": "", 
+    "version": "0.1", 
+    "fullName": "plugin", 
+    "id": "jid1-inyHJacJMznBBg", 
+    "description": "a basic add-on",
+    "dependencies": ["menuitems", "addon-kit", "api-utils", "vold-utils"]
 }
