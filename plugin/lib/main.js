@@ -45,6 +45,7 @@ var salva = function(pwindow){
 var delegate = {
   onTrack: function (window) {
     console.log("Tracking a window: " + window.location);
+    testeIndex();
     addPageSaverToMenu(window);
   },
   onUntrack: function (window) {

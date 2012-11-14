@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+<overlay id="graphicalInterface" 
+         xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul">
+ <menupopup id="menu_ToolsPopup" onpopupshown="loadSavedPages()">
+  <menu id="pagesavermenu" label="Page Saver"
+    insertafter="javascriptConsole,devToolsSeparator">
+    <menupopup id="pagesavermenupopup">
+      <menuitem id="testextension-menuitem" label="Save page"
+          oncommand="savePage()"/>  
+    </menupopup>
+  </menu>
+ </menupopup> 
+ 
+ <script type="application/x-javascript" src="chrome://pagesaver/content/graphicalInterface.js" />
+</overlay>
