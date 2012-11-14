@@ -28,9 +28,11 @@ function loadSavedPages(){
 
 //repository
 
-function savePage(description){
+function savePage(){
 	try {
-		
+		Components.utils.reportError('savePage call');
+		newFolder('test');
+		newPage('13159482', 'test page');
 	
 		var file = Components.classes["@mozilla.org/file/local;1"].createInstance(Components.interfaces.nsILocalFile);
 		file.initWithPath("/Users/jonasflesch/Documents/testpagesaver/test.html");
@@ -53,42 +55,126 @@ function savePage(description){
 }
 
 //index
-function newPage(folderIndex, description){
-	var file = Components.classes["@mozilla.org/file/local;1"].createInstance(Components.interfaces.nsILocalFile);
-	file.initWithPath("/Users/jonasflesch/Documents/testpagesaver/index.xml");
-	var indexObject;
-	if(file.exists()){
-		//TODO put this in new folder and put an error here
-		indexObject = new Object();
-		indexObject.folders = {};
-	} else {
-		var data = '';
-		Components.utils.import("resource://gre/modules/NetUtil.jsm");
- 
-		NetUtil.asyncFetch(file, function(inputStream, status) {
-			if (!Components.isSuccessCode(status)) {
-	    		return;
-			}
- 			//reads from the inputstream to the string variable
-		  	data = NetUtil.readInputStreamToString(inputStream, inputStream.available());
-		});
-		Components.utils.reportError(data);
-		indexObject = getJXONTree(doc);
-	}
-	var page = new Object();
-	page.['@description'] = description;
-	//TODO check if the random is not repeated
-	page.['@id'] = Math.floor((Math.random()*1000000000)+1);
+
+function newFolder(description){
+	try {
+		Components.utils.reportError('newFolder call');
+		var folder = new Object();
+		folder['@description'] = description;
+		//TODO check if the random is not repeated
+		folder['@id'] = Math.floor((Math.random()*1000000000)+1);
+		
+		var indexObject = retrieveIndexFile();
 	
-	for (var i=0;i<indexObject.folders.length;i++){
-		if(indexObject.folders[i].['@id'] == folderIndex){
-			
-			break;
-		}
+		indexObject.folders.push(folder);
+	
+		saveIndexFile(indexObject);	
+	} catch (err){
+		Components.utils.reportError(err);
+		Components.utils.reportError(err.message);
 	}
 }
 
+function newPage(folderIndex, description){
+	var page = new Object();
+	page['@description'] = description;
+	//TODO check if the random is not repeated
+	page['@id'] = Math.floor((Math.random()*1000000000)+1);
+	
+	var indexObject = retrieveIndexFile();
+	
+	Components.utils.reportError(indexObject.toSource());
+	
+	for (var i=0;i<indexObject.folders.length;i++){
+		if(indexObject.folders[i]['@id'] == folderIndex){
+			indexObject.folders[i].push(page);
+			break;
+		}
+	}
+	saveIndexFile(indexObject);
+}
 
+function retrieveIndexFile(){
+	try {
+		Components.utils.reportError('retrieveIndexFile call');
+		var file = Components.classes["@mozilla.org/file/local;1"].createInstance(Components.interfaces.nsILocalFile);
+		file.initWithPath("/Users/jonasflesch/Documents/testpagesaver/index.xml");
+		if(!file.exists()){
+			//TODO put this in new folder and put an error here
+			var indexObject = new Object();
+			indexObject.folders = new Array();
+		} else {
+			Components.utils.import("resource://gre/modules/NetUtil.jsm");
+			
+			//TODO make it assynchronous
+			var data = "";
+			var fstream = Components.classes["@mozilla.org/network/file-input-stream;1"].createInstance(Components.interfaces.nsIFileInputStream);
+			var cstream = Components.classes["@mozilla.org/intl/converter-input-stream;1"].createInstance(Components.interfaces.nsIConverterInputStream);
+			fstream.init(file, -1, 0, 0);
+			cstream.init(fstream, "UTF-8", 0, 0); // you can use another encoding here if you wish
+			
+			let (str = {}) {
+			  let read = 0;
+			  do { 
+			    read = cstream.readString(0xffffffff, str); // read as much as we can and put it in str.value
+			    data += str.value;
+			  } while (read != 0);
+			}
+			cstream.close();
+			
+			var dataAsXml = new DOMParser().parseFromString(data,"text/xml");
+			var indexObject = getJXONTree(dataAsXml);
+ 
+// 			NetUtil.asyncFetch(file, function(inputStream, status) {
+// 				if (!Components.isSuccessCode(status)) {
+// 	    			return;
+// 				}
+//  				//reads from the inputstream to the string variable
+// 			  	var data = NetUtil.readInputStreamToString(inputStream, inputStream.available());
+// 			  	Components.utils.reportError('data Read from file: ' + data);
+// 			});
+// 			Components.utils.reportError('data Read from file2: ' + data);
+		}
+		return indexObject;
+	} catch (err){
+		Components.utils.reportError(err);
+		Components.utils.reportError(err.message);
+	}
+}
+
+function saveIndexFile(indexObject){
+	try {
+		Components.utils.reportError('saveIndexFile call');
+		Components.utils.import("resource://gre/modules/NetUtil.jsm");
+		Components.utils.import("resource://gre/modules/FileUtils.jsm");
+	
+		var xmlDoc = createXML(indexObject);
+		var xmlAsString = new XMLSerializer().serializeToString(xmlDoc);
+		Components.utils.reportError(xmlAsString);
+ 
+		// file is nsIFile, data is a string
+	
+		var file = Components.classes["@mozilla.org/file/local;1"].createInstance(Components.interfaces.nsILocalFile);
+		file.initWithPath("/Users/jonasflesch/Documents/testpagesaver/index.xml");
+ 
+		var ostream = FileUtils.openSafeFileOutputStream(file)
+ 
+		var converter = Components.classes["@mozilla.org/intl/scriptableunicodeconverter"].createInstance(Components.interfaces.nsIScriptableUnicodeConverter);
+		converter.charset = "UTF-8";
+		var istream = converter.convertToInputStream(xmlAsString);
+ 
+		// The last argument (the callback) is optional.
+		NetUtil.asyncCopy(istream, ostream, function(status) {
+			if (!Components.isSuccessCode(status)) {
+			// Handle error!
+				return;
+			}
+		});
+	} catch (err){
+		Components.utils.reportError(err);
+		Components.utils.reportError(err.message);
+	}
+}
 
 
 //https://developer.mozilla.org/en-US/docs/JXON
