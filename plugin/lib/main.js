@@ -18,7 +18,7 @@ var salva = function(pwindow){
 	try {
 		var file = Cc["@mozilla.org/file/local;1"].createInstance(Ci.nsILocalFile);
 		file.initWithPath("/Users/jonasflesch/Documents/testpagesaver/test.html");
-	    var filePath = Cc["@mozilla.org/file/local;1"].createInstance(Ci.nsILocalFile);
+	    	var filePath = Cc["@mozilla.org/file/local;1"].createInstance(Ci.nsILocalFile);
 		filePath.initWithPath("/Users/jonasflesch/Documents/testpagesaver/test/");
 		var wbp = Cc['@mozilla.org/embedding/browser/nsWebBrowserPersist;1'].createInstance(Ci.nsIWebBrowserPersist);
 		
@@ -35,7 +35,7 @@ var salva = function(pwindow){
 		wbp.persistFlags = nsIWBP.PERSIST_FLAGS_AUTODETECT_APPLY_CONVERSION | nsIWBP.PERSIST_FLAGS_REPLACE_EXISTING_FILES | nsIWBP.PERSIST_FLAGS_FORCE_ALLOW_COOKIES;
 	
 		wbp.saveDocument(pwindow.content.document, file, filePath, null, outputFlags, 80);
-	    console.log("Saved");	
+	    	console.log("Saved");	
 	} catch (err){
 		console.log(err);
 		console.log(err.message);
