@@ -1,38 +1,19 @@
-var EXPORTED_SYMBOLS = [ "savePageOld" ];
+var EXPORTED_SYMBOLS = [ "storePage", "retrievePage", "deletePage", "deleteFolder" ];
 
-// gets the directory separator based on the operation system
-// Windows uses \ and unix uses /
-function directorySeparator(){
-	var env = Components.classes["@mozilla.org/process/environment;1"].createInstance(Components.interfaces.nsIEnvironment);
-		
-	var systemRoot = env.get("SystemRoot");
-	if(systemRoot == null || systemRoot == ''){
-		//Unix
-		return '/';
-	} else {
-		//Windows
-		return '\\';
-	}
-}
+Components.utils.import("resource://pagesaver-modules/utils.js");
+Components.utils.import("resource://pagesaver-modules/index.js");
 
-function savePageOld(){
+const EXTENSION = "html";
+
+function storePage(description, folderIndex, content){
 	try {
-		Components.utils.reportError('savePage call');
-		//newFolder('test');
-		//newPage('138211678', 'test page');
-	
-		var profileDirectory = Components.classes["@mozilla.org/file/directory_service;1"].
-           getService(Components.interfaces.nsIProperties).
-           get("ProfD", Components.interfaces.nsIFile);
-           
-        var baseDir = profileDirectory.path + directorySeparator() + "pagesaver" + directorySeparator();
+		Components.utils.reportError('storePage call');
+		
+		var pageIndex = newPage(folderIndex, description);
         
-        var filePath = Components.classes["@mozilla.org/file/local;1"].createInstance(Components.interfaces.nsILocalFile);
-		filePath.initWithPath(baseDir + "test" + directorySeparator());
+        var folderFile = fileFolderPath(folderIndex, pageIndex);
         
-        var file = Components.classes["@mozilla.org/file/local;1"].createInstance(Components.interfaces.nsILocalFile);
-        
-        file.initWithPath(baseDir + "test.html");
+        var file = filePath(folderIndex, pageIndex);
         
 		var wbp = Components.classes['@mozilla.org/embedding/browser/nsWebBrowserPersist;1'].createInstance(Components.interfaces.nsIWebBrowserPersist);
 		
@@ -43,9 +24,53 @@ function savePageOld(){
 		outputFlags |= wbp.ENCODE_FLAGS_ENCODE_BASIC_ENTITIES;
 		wbp.persistFlags = nsIWBP.PERSIST_FLAGS_AUTODETECT_APPLY_CONVERSION | nsIWBP.PERSIST_FLAGS_REPLACE_EXISTING_FILES | nsIWBP.PERSIST_FLAGS_FORCE_ALLOW_COOKIES;
 	
-		wbp.saveDocument(content.document, file, filePath, null, outputFlags, 80);	
+		wbp.saveDocument(content.document, file, folderFile, null, outputFlags, 80);	
 	} catch (err){
 		Components.utils.reportError(err);
 		Components.utils.reportError(err.message);
 	}
+}
+
+function filePath(folderIndex, pageIndex){
+	var file = Components.classes["@mozilla.org/file/local;1"].createInstance(Components.interfaces.nsILocalFile);
+    file.initWithPath(baseDir() + directorySeparator() + folderIndex + directorySeparator() + pageIndex + "." + EXTENSION);
+    return file;
+}
+
+function fileFolderPath(folderIndex, pageIndex){
+	var filePath = Components.classes["@mozilla.org/file/local;1"].createInstance(Components.interfaces.nsILocalFile);
+	filePath.initWithPath(baseDir() + directorySeparator() + folderIndex +  directorySeparator() + pageIndex + directorySeparator());
+	return filePath;
+}
+
+function folderPath(folderIndex){
+	var filePath = Components.classes["@mozilla.org/file/local;1"].createInstance(Components.interfaces.nsILocalFile);
+	filePath.initWithPath(baseDir() + directorySeparator() + folderIndex +  directorySeparator());
+	return filePath;
+}
+
+function retrievePage(pageIndex, folderIndex){
+	return baseDir() + folderIndex + directorySeparator() + pageIndex + "." + EXTENSION;
+}
+
+function deleteFolder(folderIndex){
+	var folderFile = folderPath(folderIndex);
+    
+    //if the folder is new it is not created in the hard drive
+    if(folderFile.exists()){
+    	folderFile.remove(true);
+    }
+    
+	deleteFolderFromIndex(folderIndex);
+}
+
+function deletePage(folderIndex, pageIndex){
+	var folderFile = fileFolderPath(folderIndex, pageIndex);
+    var file = filePath(folderIndex, pageIndex);
+    
+    //remove recursive
+    file.remove(true);
+    folderFile.remove(true);
+    
+	deletePageFromIndex(folderIndex, pageIndex);
 }

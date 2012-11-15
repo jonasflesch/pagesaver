@@ -31,7 +31,15 @@ function loadSavedPages(){
 
 function savePage(){
 	try {
-		window.open("chrome://pagesaver/content/savePage.xul", "bmarks", "chrome,width=600,height=300");
+		//window.open("chrome://pagesaver/content/savePage.xul", "bmarks", "chrome,width=600,height=300");
+		//newFolder('teste rs');
+		//storePage('rio grande do sul', '871122613', content);
+		//var urll = retrievePage('848722047', '105704317');
+		//Components.utils.reportError(urll);
+		//gBrowser.addTab(urll);
+		
+		//deletePage('871122613', '12370611');
+		deleteFolder('871122613');
 	} catch (err){
 		Components.utils.reportError(err);
 		Components.utils.reportError(err.message);

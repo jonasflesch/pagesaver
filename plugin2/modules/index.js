@@ -1,17 +1,20 @@
-var EXPORTED_SYMBOLS = [ "newFolder" ];
+var EXPORTED_SYMBOLS = [ "newFolder", "newPage", "deletePageFromIndex", "deleteFolderFromIndex" ];
+
+Components.utils.import("resource://pagesaver-modules/utils.js");
+
+const RANDOMSIZE = 1000000000;
 
 function newFolder(description){
 	try {
 		Components.utils.reportError('newFolder call');
 		var folder = new Object();
 		folder['@description'] = description;
-		//TODO check if the random is not repeated
-		//TODO remove mystical number
-		folder['@id'] = Math.floor((Math.random()*1000000000)+1);
 		
-		var indexObject = retrieveIndexFile();
+		var indexObject = retrieveIndex();
+		
+		folder['@id'] = generateRandomIdForPageOrFolder(indexObject.index[0].folder);
 	
-		indexObject.folder.push(folder);
+		indexObject.index[0].folder.push(folder);
 	
 		saveIndexFile(indexObject);	
 	} catch (err){
@@ -24,40 +27,82 @@ function newPage(folderIndex, description){
 	try {
 		var page = new Object();
 		page['@description'] = description;
-		//TODO check if the random is not repeated
-		//TODO remove mystical number
-		page['@id'] = Math.floor((Math.random()*1000000000)+1);
+		
+		var indexObject = retrieveIndex();
 	
-		var indexObject = retrieveIndexFile();
+		Components.utils.reportError(indexObject.index[0].folder.length);
 	
-		Components.utils.reportError(indexObject.folder.length);
-	
-		for (var i=0;i<indexObject.folder.length;i++){
-			Components.utils.reportError(indexObject.folder[i]['@id']);
-			if(indexObject.folder[i]['@id'] == folderIndex){
-		        if (!indexObject.folder[i].hasOwnProperty('page')) {
-		        	indexObject.folder[i].page = new Array();
+		for(var i=0;i<indexObject.index[0].folder.length;i++){
+			Components.utils.reportError(indexObject.index[0].folder[i]['@id']);
+			if(indexObject.index[0].folder[i]['@id'] == folderIndex){
+		        if(!indexObject.index[0].folder[i].hasOwnProperty('page')) {
+		        	indexObject.index[0].folder[i].page = new Array();
 		        }
-				indexObject.folder[i].page.push(page);
+		        page['@id'] = generateRandomIdForPageOrFolder(indexObject.index[0].folder[i].page);
+		        
+				indexObject.index[0].folder[i].page.push(page);
 				break;
 			}
 		}
 		saveIndexFile(indexObject);
+		
+		return page['@id'];
 	} catch (err){
 		Components.utils.reportError(err);
 		Components.utils.reportError(err.message);
 	}
 }
 
-function retrieveIndexFile(){
+function deletePageFromIndex(folderIndex, pageIndex){
+	var indexObject = retrieveIndex();
+	for(var i=0;i < indexObject.index[0].folder.length;i++){
+		if(indexObject.index[0].folder[i]['@id'] == folderIndex){
+			for(var j=0;j < indexObject.index[0].folder[i].page.length;j++){
+				if(indexObject.index[0].folder[i].page[j]['@id'] == pageIndex){
+					indexObject.index[0].folder[i].page.splice(j,1);
+					break;
+				}
+			}
+			break;
+		}
+	}
+	saveIndexFile(indexObject);
+}
+
+function deleteFolderFromIndex(folderIndex){
+	var indexObject = retrieveIndex();
+	for(var i=0;i < indexObject.index[0].folder.length;i++){
+		if(indexObject.index[0].folder[i]['@id'] == folderIndex){
+			indexObject.index[0].folder.splice(i,1);
+			break;
+		}
+	}
+	saveIndexFile(indexObject);
+}
+
+function generateRandomIdForPageOrFolder(pageOrFolder){
+	//safety: check if random number already exists
+	var idPageOrFolder = Math.floor((Math.random()*RANDOMSIZE)+1);
+	for (var j=0;j<pageOrFolder.length;j++){
+		if(pageOrFolder[j]['@id'] == idPageOrFolder){
+			return generateRandomIdForPage(pageOrFolder);
+		}
+	}
+	
+	return idPageOrFolder;
+}
+
+function retrieveIndex(){
 	try {
-		Components.utils.reportError('retrieveIndexFile call');
-		var file = Components.classes["@mozilla.org/file/local;1"].createInstance(Components.interfaces.nsILocalFile);
-		file.initWithPath("/Users/jonasflesch/Documents/testpagesaver/index.xml");
+		Components.utils.reportError('retrieveIndex call');
+		
+		var file = indexFile();
+		
 		if(!file.exists()){
-			//TODO put this in new folder and put an error here
 			var indexObject = new Object();
-			indexObject.folder = new Array();
+			indexObject.index = new Array();
+			indexObject.index.push(new Object());
+			indexObject.index[0].folder = new Array();
 		} else {
 			Components.utils.import("resource://gre/modules/NetUtil.jsm");
 			
@@ -77,7 +122,9 @@ function retrieveIndexFile(){
 			}
 			cstream.close();
 			
-			var dataAsXml = new DOMParser().parseFromString(data,"text/xml");
+			var domParser = Components.classes["@mozilla.org/xmlextras/domparser;1"].createInstance(Components.interfaces.nsIDOMParser);
+			
+			var dataAsXml = domParser.parseFromString(data,"text/xml");
 			var indexObject = getJXONTree(dataAsXml);
  
 // 			NetUtil.asyncFetch(file, function(inputStream, status) {
@@ -106,13 +153,13 @@ function saveIndexFile(indexObject){
 		Components.utils.import("resource://gre/modules/FileUtils.jsm");
 	
 		var xmlDoc = createXML(indexObject);
-		var xmlAsString = new XMLSerializer().serializeToString(xmlDoc);
+		
+		var xmlSerializer = Components.classes["@mozilla.org/xmlextras/xmlserializer;1"].createInstance(Components.interfaces.nsIDOMSerializer);
+		
+		var xmlAsString = xmlSerializer.serializeToString(xmlDoc);
 		Components.utils.reportError(xmlAsString);
- 
-		// file is nsIFile, data is a string
-	
-		var file = Components.classes["@mozilla.org/file/local;1"].createInstance(Components.interfaces.nsILocalFile);
-		file.initWithPath("/Users/jonasflesch/Documents/testpagesaver/index.xml");
+		
+		var file = indexFile();
  
 		var ostream = FileUtils.openSafeFileOutputStream(file)
  
@@ -123,7 +170,6 @@ function saveIndexFile(indexObject){
 		// The last argument (the callback) is optional.
 		NetUtil.asyncCopy(istream, ostream, function(status) {
 			if (!Components.isSuccessCode(status)) {
-			// Handle error!
 				return;
 			}
 		});
@@ -131,6 +177,12 @@ function saveIndexFile(indexObject){
 		Components.utils.reportError(err);
 		Components.utils.reportError(err.message);
 	}
+}
+
+function indexFile(){
+	var file = Components.classes["@mozilla.org/file/local;1"].createInstance(Components.interfaces.nsILocalFile);
+	file.initWithPath(baseDir() + "index.xml");
+	return file;
 }
 
 
@@ -207,7 +259,14 @@ function createXML (oObjTree) {
       }
     }
   }
-  const oNewDoc = document.implementation.createDocument("", "", null);
+  var currentWindow = Components.classes["@mozilla.org/appshell/window-mediator;1"].getService(Components.interfaces.nsIWindowMediator).getMostRecentWindow("navigator:browser");
+  
+	Components.utils.reportError(currentWindow);
+  
+  const oNewDoc = currentWindow.document.implementation.createDocument("", "", null);
+  
+  	Components.utils.reportError(oNewDoc);
+  
   loadObjTree(oNewDoc, oObjTree);
   return oNewDoc;
 }
