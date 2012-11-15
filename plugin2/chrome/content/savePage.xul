@@ -1,0 +1,14 @@
+<?xml version="1.0"?>
+<?xml-stylesheet href="chrome://global/skin/" type="text/css"?>
+
+<window
+    id="savePageWindow"
+    title="Save Page"
+    orient="horizontal"
+    xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul">
+<!-- Other elements go here --> 
+
+<label control="pageDescriptionLabel" value="Description"/>
+<textbox id="pageDescription" maxlength="20"/>
+
+</window>

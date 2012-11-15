@@ -1,3 +1,4 @@
+//graphical interface
 const NS_XUL = "http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul";
 
 function addItemToMenu(id, label, command, menuid, insertBefore){
@@ -44,6 +45,15 @@ function directorySeparator(){
 }
 
 function savePage(){
+	try {
+		window.open("chrome://pagesaver/content/savePage.xul", "bmarks", "chrome,width=600,height=300");
+	} catch (err){
+		Components.utils.reportError(err);
+		Components.utils.reportError(err.message);
+	}
+}
+
+function savePageOld(){
 	try {
 		Components.utils.reportError('savePage call');
 		//newFolder('test');
