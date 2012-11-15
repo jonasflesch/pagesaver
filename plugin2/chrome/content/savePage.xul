@@ -4,11 +4,17 @@
 <window
     id="savePageWindow"
     title="Save Page"
+    onload="onWindowLoad();"
     orient="horizontal"
     xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul">
 <!-- Other elements go here --> 
 
-<label control="pageDescriptionLabel" value="Description"/>
+<label control="pageDescriptionLabel" id="descriptionLabel" value="Description:"/>
 <textbox id="pageDescription" maxlength="20"/>
+<button label="Save Page As" oncommand="saveSomething(); window.close();"/>
+<label control="pageFolderLabel" value="Folder:"/>
+<menulist editable="true" id="folderList">
+</menulist>
 
+<script type="application/x-javascript" src="chrome://pagesaver/content/graphicalInterface.js" />
 </window>
