@@ -1,3 +1,5 @@
+var EXPORTED_SYMBOLS = [ "newFolder" ];
+
 function newFolder(description){
 	try {
 		Components.utils.reportError('newFolder call');
