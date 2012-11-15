@@ -28,16 +28,40 @@ function loadSavedPages(){
 
 //repository
 
+// gets the directory separator based on the operation system
+// Windows uses \ and unix uses /
+function directorySeparator(){
+	var env = Components.classes["@mozilla.org/process/environment;1"].createInstance(Components.interfaces.nsIEnvironment);
+		
+	var systemRoot = env.get("SystemRoot");
+	if(systemRoot == null || systemRoot == ''){
+		//Unix
+		return '/';
+	} else {
+		//Windows
+		return '\\';
+	}
+}
+
 function savePage(){
 	try {
 		Components.utils.reportError('savePage call');
-		newFolder('test');
-		newPage('13159482', 'test page');
+		//newFolder('test');
+		//newPage('138211678', 'test page');
 	
-		var file = Components.classes["@mozilla.org/file/local;1"].createInstance(Components.interfaces.nsILocalFile);
-		file.initWithPath("/Users/jonasflesch/Documents/testpagesaver/test.html");
-	    var filePath = Components.classes["@mozilla.org/file/local;1"].createInstance(Components.interfaces.nsILocalFile);
-		filePath.initWithPath("/Users/jonasflesch/Documents/testpagesaver/test/");
+		var profileDirectory = Components.classes["@mozilla.org/file/directory_service;1"].
+           getService(Components.interfaces.nsIProperties).
+           get("ProfD", Components.interfaces.nsIFile);
+           
+        var baseDir = profileDirectory.path + directorySeparator() + "pagesaver" + directorySeparator();
+        
+        var filePath = Components.classes["@mozilla.org/file/local;1"].createInstance(Components.interfaces.nsILocalFile);
+		filePath.initWithPath(baseDir + "test" + directorySeparator());
+        
+        var file = Components.classes["@mozilla.org/file/local;1"].createInstance(Components.interfaces.nsILocalFile);
+        
+        file.initWithPath(baseDir + "test.html");
+        
 		var wbp = Components.classes['@mozilla.org/embedding/browser/nsWebBrowserPersist;1'].createInstance(Components.interfaces.nsIWebBrowserPersist);
 		
 		const nsIWBP = Components.interfaces.nsIWebBrowserPersist;
@@ -62,11 +86,12 @@ function newFolder(description){
 		var folder = new Object();
 		folder['@description'] = description;
 		//TODO check if the random is not repeated
+		//TODO remove mystical number
 		folder['@id'] = Math.floor((Math.random()*1000000000)+1);
 		
 		var indexObject = retrieveIndexFile();
 	
-		indexObject.folders.push(folder);
+		indexObject.folder.push(folder);
 	
 		saveIndexFile(indexObject);	
 	} catch (err){
@@ -76,22 +101,32 @@ function newFolder(description){
 }
 
 function newPage(folderIndex, description){
-	var page = new Object();
-	page['@description'] = description;
-	//TODO check if the random is not repeated
-	page['@id'] = Math.floor((Math.random()*1000000000)+1);
+	try {
+		var page = new Object();
+		page['@description'] = description;
+		//TODO check if the random is not repeated
+		//TODO remove mystical number
+		page['@id'] = Math.floor((Math.random()*1000000000)+1);
 	
-	var indexObject = retrieveIndexFile();
+		var indexObject = retrieveIndexFile();
 	
-	Components.utils.reportError(indexObject.toSource());
+		Components.utils.reportError(indexObject.folder.length);
 	
-	for (var i=0;i<indexObject.folders.length;i++){
-		if(indexObject.folders[i]['@id'] == folderIndex){
-			indexObject.folders[i].push(page);
-			break;
+		for (var i=0;i<indexObject.folder.length;i++){
+			Components.utils.reportError(indexObject.folder[i]['@id']);
+			if(indexObject.folder[i]['@id'] == folderIndex){
+		        if (!indexObject.folder[i].hasOwnProperty('page')) {
+		        	indexObject.folder[i].page = new Array();
+		        }
+				indexObject.folder[i].page.push(page);
+				break;
+			}
 		}
+		saveIndexFile(indexObject);
+	} catch (err){
+		Components.utils.reportError(err);
+		Components.utils.reportError(err.message);
 	}
-	saveIndexFile(indexObject);
 }
 
 function retrieveIndexFile(){
@@ -102,7 +137,7 @@ function retrieveIndexFile(){
 		if(!file.exists()){
 			//TODO put this in new folder and put an error here
 			var indexObject = new Object();
-			indexObject.folders = new Array();
+			indexObject.folder = new Array();
 		} else {
 			Components.utils.import("resource://gre/modules/NetUtil.jsm");
 			
@@ -135,6 +170,8 @@ function retrieveIndexFile(){
 // 			});
 // 			Components.utils.reportError('data Read from file2: ' + data);
 		}
+		Components.utils.reportError(indexObject.toSource());
+		
 		return indexObject;
 	} catch (err){
 		Components.utils.reportError(err);
@@ -206,9 +243,8 @@ function getJXONTree (oXMLParent) {
         sProp = oNode.nodeName.toLowerCase();
         vContent = getJXONTree(oNode);
         if (vResult.hasOwnProperty(sProp)) {
-          if (vResult[sProp].constructor !== Array) { vResult[sProp] = [vResult[sProp]]; }
           vResult[sProp].push(vContent);
-        } else { vResult[sProp] = vContent; nLength++; }
+        } else { vResult[sProp] = [vContent]; nLength++; }
       }
     }
   }
