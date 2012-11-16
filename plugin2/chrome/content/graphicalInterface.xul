@@ -5,8 +5,10 @@
   <menu id="pagesavermenu" label="Page Saver"
     insertafter="javascriptConsole,devToolsSeparator">
     <menupopup id="pagesavermenupopup">
-      <menuitem id="testextension-menuitem" label="Save page"
-          oncommand="saveWindow()"/>  
+      <menuitem id="saveMenu" label="Save page"
+          oncommand="saveWindow()"/>
+           <menuitem id="loadMenu" label="Load page"/>
+	  <menuitem id="deleteMenu" label="Delete page"/>
     </menupopup>
   </menu>
  </menupopup> 
