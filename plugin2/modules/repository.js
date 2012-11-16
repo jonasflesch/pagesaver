@@ -10,8 +10,6 @@ const EXTENSION = "html";
 //stores the content from the file open in the tab inside to the hard drive, updating the index
 function storePage(description, folderIndex, content){
 	try {
-		Components.utils.reportError('storePage call');
-		
 		var pageIndex = newPage(folderIndex, description);
         
         var folderFile = fileFolderPath(folderIndex, pageIndex);

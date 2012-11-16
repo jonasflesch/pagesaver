@@ -162,14 +162,11 @@ function retrieveIndex(){
 // saves the object serialized as a XML into the profile directory
 function saveIndexFile(indexObject){
 	try {
-		Components.utils.reportError('saveIndexFile call');
-		
 		var xmlDoc = createXML(indexObject);
 		
 		var xmlSerializer = Components.classes["@mozilla.org/xmlextras/xmlserializer;1"].createInstance(Components.interfaces.nsIDOMSerializer);
 		
 		var xmlAsString = xmlSerializer.serializeToString(xmlDoc);
-		Components.utils.reportError(xmlAsString);
 		
 		var file = indexFile();
 		
@@ -181,7 +178,6 @@ function saveIndexFile(indexObject){
 		var xmlSerializer = Components.classes["@mozilla.org/xmlextras/xmlserializer;1"].createInstance(Components.interfaces.nsIDOMSerializer);
 		
 		var xmlAsString = xmlSerializer.serializeToString(xmlDoc);
-		Components.utils.reportError(xmlAsString);
 		
 		var file = indexFile();
  
@@ -303,11 +299,7 @@ function createXML (oObjTree) {
   }
   var currentWindow = Components.classes["@mozilla.org/appshell/window-mediator;1"].getService(Components.interfaces.nsIWindowMediator).getMostRecentWindow("navigator:browser");
   
-  Components.utils.reportError(currentWindow);
-  
   const oNewDoc = currentWindow.document.implementation.createDocument("", "", null);
-  
-  Components.utils.reportError(oNewDoc);
   
   loadObjTree(oNewDoc, oObjTree);
   return oNewDoc;

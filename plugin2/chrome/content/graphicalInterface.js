@@ -16,7 +16,6 @@ function loadSavedPages(mainDocument){
 	var element = mainDocument.getElementById("loadMenupopup");
 	if(element){
 		while(element.hasChildNodes()){
-			Components.utils.reportError('element.firstChild'+element.firstChild.id);
 			element.removeChild(element.firstChild);
 		}
 	}
@@ -40,7 +39,6 @@ function loadSavedPages(mainDocument){
 				addItemToMenu(myFolders.index[0].folder[i].page[j]['@id'],myFolders.index[0].folder[i].page[j]['@description'],loadPage,myFolders.index[0].folder[i]['@id']+'popup',null,mainDocument);
 			}
 		}catch(err){
-			Components.utils.reportError(err.message);
 		}
 	}
 	
@@ -55,7 +53,6 @@ function loadSavedPages(mainDocument){
 				addItemToMenu(myFolders.index[0].folder[i].page[j]['@id'],myFolders.index[0].folder[i].page[j]['@description'],deletePageCall,myFolders.index[0].folder[i]['@id']+'deletepopup',null,mainDocument);
 			}
 		}catch(err){
-			Components.utils.reportError(err.message);
 		}
 	}
 }
@@ -90,11 +87,8 @@ function addMenu(id, label, command, menuid, mainDocument){
     menu.setAttribute("id", id);
     menu.setAttribute("label", label);
 
-	
-	Components.utils.reportError("main document" +  mainDocument);
 	if (menuid) {
     	let ($ = function(id) mainDocument.getElementById(id)) {
-			Components.utils.reportError("menuid" +  $(menuid));
           $(menuid).appendChild(menu);
     	}
     }
@@ -175,7 +169,6 @@ function onWindowLoad(){
 function savePage(){
 	var savedName = document.getElementById("pageDescription").value; 
 	var currentMenuName = document.getElementById("folderList").value;
-	Components.utils.reportError(currentMenuName);
 	if(!currentMenuName){
 		Components.utils.reportError("no folder selected");
 	}
