@@ -115,7 +115,10 @@ function savePage(){
 			folderValue = newFolder(currentMenuName);
 		}
 	
-		loadSavedPages();
+
+	storePage(savedName, folderValue, window.opener.content);
+
+	loadSavedPages();
 	//var urll = retrievePage('848722047', '105704317');
 	//Components.utils.reportError(urll);
 	//gBrowser.addTab(urll);
