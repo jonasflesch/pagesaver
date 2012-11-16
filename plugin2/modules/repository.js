@@ -25,13 +25,6 @@ function storePage(description, folderIndex, content){
 		var outputFlags = 0;
 		outputFlags |= wbp.ENCODE_FLAGS_ENCODE_BASIC_ENTITIES;
 		wbp.persistFlags = nsIWBP.PERSIST_FLAGS_AUTODETECT_APPLY_CONVERSION | nsIWBP.PERSIST_FLAGS_REPLACE_EXISTING_FILES | nsIWBP.PERSIST_FLAGS_FORCE_ALLOW_COOKIES;
-		
-		var mainWindow = window.QueryInterface(Components.interfaces.nsIInterfaceRequestor)
-                   .getInterface(Components.interfaces.nsIWebNavigation)
-                   .QueryInterface(Components.interfaces.nsIDocShellTreeItem)
-                   .rootTreeItem
-                   .QueryInterface(Components.interfaces.nsIInterfaceRequestor)
-                   .getInterface(Components.interfaces.nsIDOMWindow);
 	
 		wbp.saveDocument(content.document, file, folderFile, null, outputFlags, 80);	
 	} catch (err){
