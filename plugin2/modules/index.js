@@ -12,6 +12,8 @@ function newFolder(description){
 		
 		var indexObject = retrieveIndex();
 		
+		Components.utils.reportError(indexObject.index[0].folder);
+		
 		folder['@id'] = generateRandomIdForPageOrFolder(indexObject.index[0].folder);
 	
 		indexObject.index[0].folder.push(folder);
@@ -83,9 +85,11 @@ function deleteFolderFromIndex(folderIndex){
 function generateRandomIdForPageOrFolder(pageOrFolder){
 	//safety: check if random number already exists
 	var idPageOrFolder = Math.floor((Math.random()*RANDOMSIZE)+1);
-	for (var j=0;j<pageOrFolder.length;j++){
-		if(pageOrFolder[j]['@id'] == idPageOrFolder){
-			return generateRandomIdForPage(pageOrFolder);
+	if (!(typeof pageOrFolder === "undefined")) {
+		for (var j=0;j<pageOrFolder.length;j++){
+			if(pageOrFolder[j]['@id'] == idPageOrFolder){
+				return generateRandomIdForPage(pageOrFolder);
+			}
 		}
 	}
 	
@@ -126,6 +130,15 @@ function retrieveIndex(){
 			
 			var dataAsXml = domParser.parseFromString(data,"text/xml");
 			var indexObject = getJXONTree(dataAsXml);
+			
+			if(!indexObject.hasOwnProperty('index')) {
+				Components.utils.reportError('no index, creating');
+				indexObject.index = new Array();
+				indexObject.index.push(new Object());
+			}
+			if(!indexObject.index[0].hasOwnProperty('folder')) {
+				indexObject.index[0].folder = new Array();
+			}
  
 // 			NetUtil.asyncFetch(file, function(inputStream, status) {
 // 				if (!Components.isSuccessCode(status)) {
@@ -197,7 +210,7 @@ function parseText (sValue) {
 }
  
 function getJXONTree (oXMLParent) {
-  var vResult = /* put here the default value for empty nodes! */ true, nLength = 0, sCollectedTxt = "";
+  var vResult = /* put here the default value for empty nodes! */ new Object(), nLength = 0, sCollectedTxt = "";
   if (oXMLParent.hasAttributes()) {
     vResult = {};
     for (nLength; nLength < oXMLParent.attributes.length; nLength++) {
