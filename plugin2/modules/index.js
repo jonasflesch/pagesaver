@@ -173,14 +173,42 @@ function saveIndexFile(indexObject){
 		
 		var file = indexFile();
 		
+		/*Components.utils.import("resource://gre/modules/NetUtil.jsm");
+		Components.utils.import("resource://gre/modules/FileUtils.jsm");
+	
+		var xmlDoc = createXML(indexObject);
+		
+		var xmlSerializer = Components.classes["@mozilla.org/xmlextras/xmlserializer;1"].createInstance(Components.interfaces.nsIDOMSerializer);
+		
+		var xmlAsString = xmlSerializer.serializeToString(xmlDoc);
+		Components.utils.reportError(xmlAsString);
+		
+		var file = indexFile();
+ 
+		var ostream = FileUtils.openSafeFileOutputStream(file)
+ 
+		var converter = Components.classes["@mozilla.org/intl/scriptableunicodeconverter"].createInstance(Components.interfaces.nsIScriptableUnicodeConverter);
+		converter.charset = "UTF-8";
+		var istream = converter.convertToInputStream(xmlAsString);
+ 
+
+		NetUtil.asyncCopy(istream, ostream, function(status) {
+			if (!Components.isSuccessCode(status)) {
+				return;
+			}
+		});*/
+		// file is nsIFile, data is a string
 		var foStream = Components.classes["@mozilla.org/network/file-output-stream;1"].createInstance(Components.interfaces.nsIFileOutputStream);
  
-		// Mozilla flags : https://developer.mozilla.org/en-US/docs/PR_Open
-		// 0x02	Open for writing only.
-		// 0x08	If the file does not exist, the file is created. If the file exists, this flag has no effect.
-		// 0x20	If the file exists, its length is truncated to 0.
+		// use 0x02 | 0x10 to open file for appending.
 		foStream.init(file, 0x02 | 0x08 | 0x20, 0666, 0); 
+		//foStream.init(file, foStream.PR_WRONLY | foStream.PR_CREATE_FILE | foStream.PR_TRUNCATE, 0666, 0); 
+		// write, create, truncate
+		// In a c file operation, we have no need to set file mode with or operation,
+		// directly using "r" or "w" usually.
  
+		// if you are sure there will never ever be any non-ascii text in data you can 
+		// also call foStream.write(data, data.length) directly
 		var converter = Components.classes["@mozilla.org/intl/converter-output-stream;1"].createInstance(Components.interfaces.nsIConverterOutputStream);
 		converter.init(foStream, "UTF-8", 0, 0);
 		converter.writeString(xmlAsString);
