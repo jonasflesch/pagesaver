@@ -15,18 +15,84 @@ function addItemToMenu(id, label, command, menuid, insertBefore){
     var menuitem = window.document.createElementNS(NS_XUL, "menuitem");
     menuitem.setAttribute("id", id);
     menuitem.setAttribute("label", label);
-    menuitem.addEventListener("command", command, true);
+    //menuitem.addEventListener("command", command, true);
 
-	//check for safety
-    if (menuid) {
+	if (menuid) {
     	let ($ = function(id) window.document.getElementById(id)) {
-          $(menuid).insertBefore(menuitem, $(insertBefore));
+          $(menuid).appendChild(menuitem);
     	}
     }
 }
 
+function addMenu(id, label, command, menuid){
+	//check for safety, if it is not the window of the browser doesnt add
+	if ("chrome://browser/content/browser.xul" != window.location) return;
+
+    var onCmd = function() {
+    	options.onCommand && options.onCommand();
+    };
+	
+    var menu = window.document.createElementNS(NS_XUL, "menu");
+    menu.setAttribute("id", id);
+    menu.setAttribute("label", label);
+    //menu.addEventListener("command", command, true);
+
+	if (menuid) {
+    	let ($ = function(id) window.document.getElementById(id)) {
+          $(menuid).appendChild(menu);
+    	}
+    }
+	
+	var menupopupid=id+'popup';
+	
+	 var menupopup = window.document.createElementNS(NS_XUL, "menupopup");
+	menupopup.setAttribute("id", menupopupid);
+	menupopup.setAttribute("type", "menu");
+
+	if (id) {
+    	let ($ = function(menupopupid) window.document.getElementById(menupopupid)) {
+          $(id).appendChild(menupopup);
+    	}
+    }
+	
+	
+}
+
 function loadSavedPages(){
-	addItemToMenu('test', 'Click me', null, 'pagesavermenupopup', 'testextension-menuitem');
+	var element = document.getElementById("loadMenupopup");
+	if(element){
+		while(element.hasChildNodes()){
+			element.removeChild(element.firstChild);
+		}
+	}
+	element = document.getElementById("deleteMenupopup");
+	if(element){
+		while(element.hasChildNodes()){
+			element.removeChild(element.firstChild);
+		}
+	}
+	
+	var myFolders = retrieveIndex();
+	for(var i =0;i<myFolders.index[0].folder.length;i++){
+		addMenu(myFolders.index[0].folder[i]['@id'],myFolders.index[0].folder[i]['@description'],null,'loadMenupopup');
+		try{
+			for(var j=0;j<myFolders.index[0].folder[i].page.length;j++){
+				addItemToMenu(myFolders.index[0].folder[i].page[j]['@id'],myFolders.index[0].folder[i].page[j]['@description'],null,myFolders.index[0].folder[i]['@id']+'popup',null);
+			}
+		}catch(err){
+		}
+	}
+	
+	for(var i =0;i<myFolders.index[0].folder.length;i++){
+		addMenu(myFolders.index[0].folder[i]['@id']+'delete',myFolders.index[0].folder[i]['@description'],null,'deleteMenupopup');
+		addItemToMenu(myFolders.index[0].folder[i]['@id']+'deletefolder',"Delete Folder",null,myFolders.index[0].folder[i]['@id']+'deletepopup',null);
+		try{
+			for(var j=0;j<myFolders.index[0].folder[i].page.length;j++){
+				addItemToMenu(myFolders.index[0].folder[i].page[j]['@id'],myFolders.index[0].folder[i].page[j]['@description'],null,myFolders.index[0].folder[i]['@id']+'deletepopup',null);
+			}
+		}catch(err){
+		}
+	}
 }
 function savePage(){
 	var savedName = document.getElementById("pageDescription").value; 
@@ -49,7 +115,7 @@ function savePage(){
 			folderValue = newFolder(currentMenuName);
 		}
 	
-	storePage(savedName,folderValue, window.opener.content);
+		loadSavedPages();
 	//var urll = retrievePage('848722047', '105704317');
 	//Components.utils.reportError(urll);
 	//gBrowser.addTab(urll);
