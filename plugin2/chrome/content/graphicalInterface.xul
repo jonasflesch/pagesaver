@@ -1,15 +1,20 @@
 <?xml version="1.0"?>
 <overlay id="graphicalInterface" 
-         xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul">
- <menupopup id="menu_ToolsPopup" onpopupshown="loadSavedPages()">
+         xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul" >
+ 
+ <menupopup id="menu_ToolsPopup" onload="loadSavedPages();" >
   <menu id="pagesavermenu" label="Page Saver"
     insertafter="javascriptConsole,devToolsSeparator">
     <menupopup id="pagesavermenupopup">
       <menuitem id="saveMenu" label="Save page"
           oncommand="saveWindow()"/>
-           <menuitem id="loadMenu" label="Load page"/>
-	  <menuitem id="deleteMenu" label="Delete page"/>
-    </menupopup>
+	  <menu id="loadMenu" label="Load page">
+		<menupopup id="loadMenupopup"/>
+	  </menu>
+	  <menu id="deleteMenu" label="Delete page">
+		<menupopup id="deleteMenupopup"/>
+	  </menu>
+	</menupopup>
   </menu>
  </menupopup> 
  
