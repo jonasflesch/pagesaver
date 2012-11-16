@@ -6,7 +6,7 @@
     insertafter="javascriptConsole,devToolsSeparator">
     <menupopup id="pagesavermenupopup">
       <menuitem id="testextension-menuitem" label="Save page"
-          oncommand="savePage()"/>  
+          oncommand="saveWindow()"/>  
     </menupopup>
   </menu>
  </menupopup> 
