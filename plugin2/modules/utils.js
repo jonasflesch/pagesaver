@@ -15,6 +15,7 @@ function directorySeparator(){
 	}
 }
 
+//gets the base dir for the application, which is the profile directort
 function baseDir(){
 	var profileDirectory = Components.classes["@mozilla.org/file/directory_service;1"].
 		getService(Components.interfaces.nsIProperties).

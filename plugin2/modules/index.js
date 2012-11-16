@@ -2,8 +2,10 @@ var EXPORTED_SYMBOLS = [ "newFolder", "newPage", "deletePageFromIndex", "deleteF
 
 Components.utils.import("resource://pagesaver-modules/utils.js");
 
+//maximum size of the id of a page or folder
 const RANDOMSIZE = 1000000000;
 
+//creates a new folder in the index
 function newFolder(description){
 	try {
 		Components.utils.reportError('newFolder call');
@@ -27,6 +29,7 @@ function newFolder(description){
 	}
 }
 
+//creates a new page into the index, returning the generated ID
 function newPage(folderIndex, description){
 	try {
 		var page = new Object();
@@ -57,6 +60,7 @@ function newPage(folderIndex, description){
 	}
 }
 
+//deletes a page from the index
 function deletePageFromIndex(folderIndex, pageIndex){
 	var indexObject = retrieveIndex();
 	for(var i=0;i < indexObject.index[0].folder.length;i++){
@@ -73,6 +77,7 @@ function deletePageFromIndex(folderIndex, pageIndex){
 	saveIndexFile(indexObject);
 }
 
+//deletes a folder from the index
 function deleteFolderFromIndex(folderIndex){
 	var indexObject = retrieveIndex();
 	for(var i=0;i < indexObject.index[0].folder.length;i++){
@@ -84,9 +89,11 @@ function deleteFolderFromIndex(folderIndex){
 	saveIndexFile(indexObject);
 }
 
+//retrieves a random number to be used as id for a file or folder
 function generateRandomIdForPageOrFolder(pageOrFolder){
 	//safety: check if random number already exists
 	var idPageOrFolder = Math.floor((Math.random()*RANDOMSIZE)+1);
+	//check for safety
 	if (!(typeof pageOrFolder === "undefined")) {
 		for (var j=0;j<pageOrFolder.length;j++){
 			if(pageOrFolder[j]['@id'] == idPageOrFolder){
@@ -98,6 +105,7 @@ function generateRandomIdForPageOrFolder(pageOrFolder){
 	return idPageOrFolder;
 }
 
+//gets the index as an object from the profile directory
 function retrieveIndex(){
 	try {
 		Components.utils.reportError('retrieveIndex call');
@@ -112,17 +120,16 @@ function retrieveIndex(){
 		} else {
 			Components.utils.import("resource://gre/modules/NetUtil.jsm");
 			
-			//TODO make it assynchronous
 			var data = "";
 			var fstream = Components.classes["@mozilla.org/network/file-input-stream;1"].createInstance(Components.interfaces.nsIFileInputStream);
 			var cstream = Components.classes["@mozilla.org/intl/converter-input-stream;1"].createInstance(Components.interfaces.nsIConverterInputStream);
 			fstream.init(file, -1, 0, 0);
-			cstream.init(fstream, "UTF-8", 0, 0); // you can use another encoding here if you wish
+			cstream.init(fstream, "UTF-8", 0, 0);
 			
 			let (str = {}) {
 			  let read = 0;
 			  do { 
-			    read = cstream.readString(0xffffffff, str); // read as much as we can and put it in str.value
+			    read = cstream.readString(0xffffffff, str);
 			    data += str.value;
 			  } while (read != 0);
 			}
@@ -141,16 +148,7 @@ function retrieveIndex(){
 			if(!indexObject.index[0].hasOwnProperty('folder')) {
 				indexObject.index[0].folder = new Array();
 			}
- 
-// 			NetUtil.asyncFetch(file, function(inputStream, status) {
-// 				if (!Components.isSuccessCode(status)) {
-// 	    			return;
-// 				}
-//  				//reads from the inputstream to the string variable
-// 			  	var data = NetUtil.readInputStreamToString(inputStream, inputStream.available());
-// 			  	Components.utils.reportError('data Read from file: ' + data);
-// 			});
-// 			Components.utils.reportError('data Read from file2: ' + data);
+
 		}
 		Components.utils.reportError(indexObject.toSource());
 		
@@ -161,10 +159,21 @@ function retrieveIndex(){
 	}
 }
 
+// saves the object serialized as a XML into the profile directory
 function saveIndexFile(indexObject){
 	try {
 		Components.utils.reportError('saveIndexFile call');
-		Components.utils.import("resource://gre/modules/NetUtil.jsm");
+		
+		var xmlDoc = createXML(indexObject);
+		
+		var xmlSerializer = Components.classes["@mozilla.org/xmlextras/xmlserializer;1"].createInstance(Components.interfaces.nsIDOMSerializer);
+		
+		var xmlAsString = xmlSerializer.serializeToString(xmlDoc);
+		Components.utils.reportError(xmlAsString);
+		
+		var file = indexFile();
+		
+		/*Components.utils.import("resource://gre/modules/NetUtil.jsm");
 		Components.utils.import("resource://gre/modules/FileUtils.jsm");
 	
 		var xmlDoc = createXML(indexObject);
@@ -182,18 +191,35 @@ function saveIndexFile(indexObject){
 		converter.charset = "UTF-8";
 		var istream = converter.convertToInputStream(xmlAsString);
  
-		// The last argument (the callback) is optional.
+
 		NetUtil.asyncCopy(istream, ostream, function(status) {
 			if (!Components.isSuccessCode(status)) {
 				return;
 			}
-		});
+		});*/
+		// file is nsIFile, data is a string
+		var foStream = Components.classes["@mozilla.org/network/file-output-stream;1"].createInstance(Components.interfaces.nsIFileOutputStream);
+ 
+		// use 0x02 | 0x10 to open file for appending.
+		foStream.init(file, 0x02 | 0x08 | 0x20, 0666, 0); 
+		//foStream.init(file, foStream.PR_WRONLY | foStream.PR_CREATE_FILE | foStream.PR_TRUNCATE, 0666, 0); 
+		// write, create, truncate
+		// In a c file operation, we have no need to set file mode with or operation,
+		// directly using "r" or "w" usually.
+ 
+		// if you are sure there will never ever be any non-ascii text in data you can 
+		// also call foStream.write(data, data.length) directly
+		var converter = Components.classes["@mozilla.org/intl/converter-output-stream;1"].createInstance(Components.interfaces.nsIConverterOutputStream);
+		converter.init(foStream, "UTF-8", 0, 0);
+		converter.writeString(xmlAsString);
+		converter.close(); // this closes foStream
 	} catch (err){
 		Components.utils.reportError(err);
 		Components.utils.reportError(err.message);
 	}
 }
 
+//returns the file for the index.xml of the plugin
 function indexFile(){
 	var file = Components.classes["@mozilla.org/file/local;1"].createInstance(Components.interfaces.nsILocalFile);
 	file.initWithPath(baseDir() + "index.xml");
@@ -210,9 +236,10 @@ function parseText (sValue) {
   if (isFinite(Date.parse(sValue))) { return new Date(sValue); }
   return sValue;
 }
- 
+
+//transforms the XML into an javascript object
 function getJXONTree (oXMLParent) {
-  var vResult = /* put here the default value for empty nodes! */ new Object(), nLength = 0, sCollectedTxt = "";
+  var vResult = new Object(), nLength = 0, sCollectedTxt = "";
   if (oXMLParent.hasAttributes()) {
     vResult = {};
     for (nLength; nLength < oXMLParent.attributes.length; nLength++) {
@@ -236,10 +263,10 @@ function getJXONTree (oXMLParent) {
     }
   }
   if (sCollectedTxt) { nLength > 0 ? vResult.keyValue = parseText(sCollectedTxt) : vResult = parseText(sCollectedTxt); }
-  /* if (nLength > 0) { Object.freeze(vResult); } */
   return vResult;
 }
 
+//transforms a javascript object into an XML
 function createXML (oObjTree) {
   function loadObjTree (oParentEl, oParentObj) {
     var vValue, oChild;
@@ -276,11 +303,11 @@ function createXML (oObjTree) {
   }
   var currentWindow = Components.classes["@mozilla.org/appshell/window-mediator;1"].getService(Components.interfaces.nsIWindowMediator).getMostRecentWindow("navigator:browser");
   
-	Components.utils.reportError(currentWindow);
+  Components.utils.reportError(currentWindow);
   
   const oNewDoc = currentWindow.document.implementation.createDocument("", "", null);
   
-  	Components.utils.reportError(oNewDoc);
+  Components.utils.reportError(oNewDoc);
   
   loadObjTree(oNewDoc, oObjTree);
   return oNewDoc;

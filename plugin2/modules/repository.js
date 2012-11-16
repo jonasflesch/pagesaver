@@ -3,8 +3,10 @@ var EXPORTED_SYMBOLS = [ "storePage", "retrievePage", "deletePage", "deleteFolde
 Components.utils.import("resource://pagesaver-modules/utils.js");
 Components.utils.import("resource://pagesaver-modules/index.js");
 
+//the extension of the saved file
 const EXTENSION = "html";
 
+//stores the content from the file open in the tab inside to the hard drive, updating the index
 function storePage(description, folderIndex, content){
 	try {
 		Components.utils.reportError('storePage call');
@@ -23,6 +25,13 @@ function storePage(description, folderIndex, content){
 		var outputFlags = 0;
 		outputFlags |= wbp.ENCODE_FLAGS_ENCODE_BASIC_ENTITIES;
 		wbp.persistFlags = nsIWBP.PERSIST_FLAGS_AUTODETECT_APPLY_CONVERSION | nsIWBP.PERSIST_FLAGS_REPLACE_EXISTING_FILES | nsIWBP.PERSIST_FLAGS_FORCE_ALLOW_COOKIES;
+		
+		var mainWindow = window.QueryInterface(Components.interfaces.nsIInterfaceRequestor)
+                   .getInterface(Components.interfaces.nsIWebNavigation)
+                   .QueryInterface(Components.interfaces.nsIDocShellTreeItem)
+                   .rootTreeItem
+                   .QueryInterface(Components.interfaces.nsIInterfaceRequestor)
+                   .getInterface(Components.interfaces.nsIDOMWindow);
 	
 		wbp.saveDocument(content.document, file, folderFile, null, outputFlags, 80);	
 	} catch (err){
@@ -31,28 +40,34 @@ function storePage(description, folderIndex, content){
 	}
 }
 
+//return the File where the html file is saved in the hard drive
 function filePath(folderIndex, pageIndex){
 	var file = Components.classes["@mozilla.org/file/local;1"].createInstance(Components.interfaces.nsILocalFile);
     file.initWithPath(baseDir() + directorySeparator() + folderIndex + directorySeparator() + pageIndex + "." + EXTENSION);
     return file;
 }
 
+//return the File for the folder where the CSS, JS, etc files are saved in the hard drive
 function fileFolderPath(folderIndex, pageIndex){
 	var filePath = Components.classes["@mozilla.org/file/local;1"].createInstance(Components.interfaces.nsILocalFile);
 	filePath.initWithPath(baseDir() + directorySeparator() + folderIndex +  directorySeparator() + pageIndex + directorySeparator());
 	return filePath;
 }
 
+//returns the File object for a folder in the hard drive
 function folderPath(folderIndex){
 	var filePath = Components.classes["@mozilla.org/file/local;1"].createInstance(Components.interfaces.nsILocalFile);
 	filePath.initWithPath(baseDir() + directorySeparator() + folderIndex +  directorySeparator());
 	return filePath;
 }
 
+//return the path for the page in the hard drive
+//returns as string because is this way that Firefox needs it to load into the tab
 function retrievePage(pageIndex, folderIndex){
 	return baseDir() + folderIndex + directorySeparator() + pageIndex + "." + EXTENSION;
 }
 
+//deleted the folder from the hard drive and from the index
 function deleteFolder(folderIndex){
 	var folderFile = folderPath(folderIndex);
     
@@ -64,6 +79,7 @@ function deleteFolder(folderIndex){
 	deleteFolderFromIndex(folderIndex);
 }
 
+//deletes a page from the hard drive and from the index
 function deletePage(folderIndex, pageIndex){
 	var folderFile = fileFolderPath(folderIndex, pageIndex);
     var file = filePath(folderIndex, pageIndex);
