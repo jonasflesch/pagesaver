@@ -28,11 +28,28 @@ function addItemToMenu(id, label, command, menuid, insertBefore){
 function loadSavedPages(){
 	addItemToMenu('test', 'Click me', null, 'pagesavermenupopup', 'testextension-menuitem');
 }
-function saveSomething(){
-	var savedName = document.getElementById("pageDescription").value;
-	Components.utils.reportError("selected page is: " + savedName);
-	newFolder('teste rs');
-	storePage(savedName, '871122613', content);
+function savePage(){
+	var savedName = document.getElementById("pageDescription").value; 
+	var currentMenuName = document.getElementById("folderList").value;
+	Components.utils.reportError(currentMenuName);
+	if(!currentMenuName){
+		Components.utils.reportError("no folder selected");
+	}
+	else if(!savedName){
+		Components.utils.reportError("no description entered");
+	}
+	else{
+		try{
+			var folderValue = document.getElementById("folderList").selectedItem.value;
+		}catch(err){
+			folderValue=null;
+		}
+		if(folderValue==null){
+			Components.utils.reportError("new folder created?");
+			folderValue = newFolder(currentMenuName);
+		}
+	
+	storePage(savedName,folderValue, window.opener.content);
 	//var urll = retrievePage('848722047', '105704317');
 	//Components.utils.reportError(urll);
 	//gBrowser.addTab(urll);
@@ -40,30 +57,32 @@ function saveSomething(){
 	//deletePage('871122613', '12370611');
 	//deleteFolder('871122613');
 	
+	window.close();
+	}
 	
 }
 
 function onWindowLoad(){
-	for(var i =0;i<window.arguments[0].length;i++){
-		document.getElementById("folderList").appendItem(window.arguments[0][i]);
+	var myFolders=retrieveIndex();
+	var myArray = new Array();
+	for(var i =0;i<myFolders.index[0].folder.length;i++){
+		myArray[i]=new Array(2);
+		myArray[i][0] = myFolders.index[0].folder[i]['@description'];
+		myArray[i][1] = myFolders.index[0].folder[i]['@id'];
 	}
+	myArray.sort();
+	for(var i =0;i<myArray.length;i++){
+		document.getElementById("folderList").appendItem(myArray[i][0], myArray[i][1]);
+	}
+	
+	/*for(var i =0;i<myFolders.index[0].folder.length;i++){
+		document.getElementById("folderList").appendItem(myFolders.index[0].folder[i]['@description'], myFolders.index[0].folder[i]['@id']);
+	}*/
 }
 
-function savePage(){
+function saveWindow(){
 	try {
-		var myArray = new Array();
-		myArray[0]= "Apples";
-		myArray[1]= "Oranges";
-		myArray[2]= "Bananas";
-		window.openDialog("chrome://pagesaver/content/savePage.xul", "bmarks", "chrome,width=600,height=50,centerscreen",myArray);
-		//newFolder('teste rs');
-		//storePage('rio grande do sul', '871122613', content);
-		//var urll = retrievePage('848722047', '105704317');
-		//Components.utils.reportError(urll);
-		//gBrowser.addTab(urll);
-		
-		//deletePage('871122613', '12370611');
-		//deleteFolder('871122613');
+		window.open("chrome://pagesaver/content/savePage.xul", "bmarks", "chrome,width=700,height=50,centerscreen");
 	} catch (err){
 		Components.utils.reportError(err);
 		Components.utils.reportError(err.message);
