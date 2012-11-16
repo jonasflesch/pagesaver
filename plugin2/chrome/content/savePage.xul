@@ -11,7 +11,7 @@
 
 <label control="pageDescriptionLabel" id="descriptionLabel" value="Description:"/>
 <textbox id="pageDescription" maxlength="20"/>
-<button label="Save Page As" oncommand="saveSomething(); window.close();"/>
+<button label="Save Page As" oncommand="savePage();"/>
 <label control="pageFolderLabel" value="Folder:"/>
 <menulist editable="true" id="folderList">
 </menulist>
