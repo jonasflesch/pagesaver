@@ -6,6 +6,7 @@ Components.utils.import("resource://pagesaver-modules/index.js");
 //the extension of the saved file
 const EXTENSION = "html";
 
+
 //stores the content from the file open in the tab inside to the hard drive, updating the index
 function storePage(description, folderIndex, content){
 	try {
@@ -25,7 +26,7 @@ function storePage(description, folderIndex, content){
 		var outputFlags = 0;
 		outputFlags |= wbp.ENCODE_FLAGS_ENCODE_BASIC_ENTITIES;
 		wbp.persistFlags = nsIWBP.PERSIST_FLAGS_AUTODETECT_APPLY_CONVERSION | nsIWBP.PERSIST_FLAGS_REPLACE_EXISTING_FILES | nsIWBP.PERSIST_FLAGS_FORCE_ALLOW_COOKIES;
-	
+		
 		wbp.saveDocument(content.document, file, folderFile, null, outputFlags, 80);	
 	} catch (err){
 		Components.utils.reportError(err);
