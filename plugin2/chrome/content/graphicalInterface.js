@@ -4,53 +4,57 @@ Components.utils.import("resource://pagesaver-modules/repository.js");
 //graphical interface
 const NS_XUL = "http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul";
 
-function addItemToMenu(id, label, command, menuid, insertBefore){
+function addItemToMenu(id, label, onCommand, menuid, insertBefore, mainDocument){
 	//check for safety, if it is not the window of the browser doesnt add
-	if ("chrome://browser/content/browser.xul" != window.location) return;
+	//if ("chrome://browser/content/browser.xul" != window.location) return;
 
-    var onCmd = function() {
-    	options.onCommand && options.onCommand();
-    };
-
-    var menuitem = window.document.createElementNS(NS_XUL, "menuitem");
+    var menuitem = mainDocument.createElementNS(NS_XUL, "menuitem");
     menuitem.setAttribute("id", id);
     menuitem.setAttribute("label", label);
-    //menuitem.addEventListener("command", command, true);
+    menuitem.addEventListener("command", onCommand, true);
 
 	if (menuid) {
-    	let ($ = function(id) window.document.getElementById(id)) {
+    	let ($ = function(id) mainDocument.getElementById(id)) {
           $(menuid).appendChild(menuitem);
     	}
     }
 }
 
-function addMenu(id, label, command, menuid){
+function addMenu(id, label, command, menuid, mainDocument){
 	//check for safety, if it is not the window of the browser doesnt add
-	if ("chrome://browser/content/browser.xul" != window.location) return;
+	//if ("chrome://browser/content/browser.xul" != window.location) return;
 
     var onCmd = function() {
     	options.onCommand && options.onCommand();
     };
 	
-    var menu = window.document.createElementNS(NS_XUL, "menu");
+    var menu = mainDocument.createElementNS(NS_XUL, "menu");
     menu.setAttribute("id", id);
     menu.setAttribute("label", label);
-    //menu.addEventListener("command", command, true);
 
+	
+	Components.utils.reportError("main document" +  mainDocument);
 	if (menuid) {
-    	let ($ = function(id) window.document.getElementById(id)) {
+    	let ($ = function(id) mainDocument.getElementById(id)) {
+			Components.utils.reportError("menuid" +  $(menuid));
           $(menuid).appendChild(menu);
     	}
     }
 	
+	//if (menuid) {
+    //	let ($ = function(id) mainDocument.getElementById(id)) {
+    //      $(menuid).appendChild(menu);
+    //	}
+    //}
+	
 	var menupopupid=id+'popup';
 	
-	 var menupopup = window.document.createElementNS(NS_XUL, "menupopup");
+	var menupopup = mainDocument.createElementNS(NS_XUL, "menupopup");
 	menupopup.setAttribute("id", menupopupid);
 	menupopup.setAttribute("type", "menu");
 
 	if (id) {
-    	let ($ = function(menupopupid) window.document.getElementById(menupopupid)) {
+    	let ($ = function(menupopupid) mainDocument.getElementById(menupopupid)) {
           $(id).appendChild(menupopup);
     	}
     }
@@ -58,14 +62,40 @@ function addMenu(id, label, command, menuid){
 	
 }
 
-function loadSavedPages(){
-	var element = document.getElementById("loadMenupopup");
+function loadPage(){
+	var urll = retrievePage(this.id,this.parentContainer.id);
+    gBrowser.addTab(urll);
+}
+	   
+function deletePageCall(){
+	var tempId = this.parentContainer.id.substring(0,this.parentContainer.id.lastIndexOf('delete'));
+	deletePage(tempId,this.id);
+	loadSavedPages(window.document);
+}
+
+function deleteFolderCall(){
+	var tempId = this.parentContainer.id.substring(0,this.id.lastIndexOf('deletefolder'));
+	deleteFolder(tempId);
+	loadSavedPages(window.document);
+}
+	   
+function loadSavedPages(mainDocument){
+
+	if(typeof mainDocument === "undefined"){
+		mainDocument = window.document;
+		Components.utils.reportError("window to source = " + window.document.toSource());
+	}
+
+	Components.utils.reportError("document = " + mainDocument.toSource());
+
+	var element = mainDocument.getElementById("loadMenupopup");
 	if(element){
 		while(element.hasChildNodes()){
+			Components.utils.reportError('element.firstChild'+element.firstChild.id);
 			element.removeChild(element.firstChild);
 		}
 	}
-	element = document.getElementById("deleteMenupopup");
+	element = mainDocument.getElementById("deleteMenupopup");
 	if(element){
 		while(element.hasChildNodes()){
 			element.removeChild(element.firstChild);
@@ -73,24 +103,27 @@ function loadSavedPages(){
 	}
 	
 	var myFolders = retrieveIndex();
+	
 	for(var i =0;i<myFolders.index[0].folder.length;i++){
-		addMenu(myFolders.index[0].folder[i]['@id'],myFolders.index[0].folder[i]['@description'],null,'loadMenupopup');
+		addMenu(myFolders.index[0].folder[i]['@id'],myFolders.index[0].folder[i]['@description'],null,'loadMenupopup',mainDocument);
 		try{
 			for(var j=0;j<myFolders.index[0].folder[i].page.length;j++){
-				addItemToMenu(myFolders.index[0].folder[i].page[j]['@id'],myFolders.index[0].folder[i].page[j]['@description'],null,myFolders.index[0].folder[i]['@id']+'popup',null);
+				addItemToMenu(myFolders.index[0].folder[i].page[j]['@id'],myFolders.index[0].folder[i].page[j]['@description'],loadPage,myFolders.index[0].folder[i]['@id']+'popup',null,mainDocument);
 			}
 		}catch(err){
+			Components.utils.reportError(err.message);
 		}
 	}
 	
 	for(var i =0;i<myFolders.index[0].folder.length;i++){
-		addMenu(myFolders.index[0].folder[i]['@id']+'delete',myFolders.index[0].folder[i]['@description'],null,'deleteMenupopup');
-		addItemToMenu(myFolders.index[0].folder[i]['@id']+'deletefolder',"Delete Folder",null,myFolders.index[0].folder[i]['@id']+'deletepopup',null);
+		addMenu(myFolders.index[0].folder[i]['@id']+'delete',myFolders.index[0].folder[i]['@description'],null,'deleteMenupopup',mainDocument);
+		addItemToMenu(myFolders.index[0].folder[i]['@id']+'deletefolder',"Delete Folder",deleteFolderCall,myFolders.index[0].folder[i]['@id']+'deletepopup',null,mainDocument);
 		try{
 			for(var j=0;j<myFolders.index[0].folder[i].page.length;j++){
-				addItemToMenu(myFolders.index[0].folder[i].page[j]['@id'],myFolders.index[0].folder[i].page[j]['@description'],null,myFolders.index[0].folder[i]['@id']+'deletepopup',null);
+				addItemToMenu(myFolders.index[0].folder[i].page[j]['@id'],myFolders.index[0].folder[i].page[j]['@description'],deletePageCall,myFolders.index[0].folder[i]['@id']+'deletepopup',null,mainDocument);
 			}
 		}catch(err){
+			Components.utils.reportError(err.message);
 		}
 	}
 }
@@ -111,22 +144,14 @@ function savePage(){
 			folderValue=null;
 		}
 		if(folderValue==null){
-			Components.utils.reportError("new folder created?");
 			folderValue = newFolder(currentMenuName);
 		}
 	
-
-	storePage(savedName, folderValue, window.opener.content);
-
-	loadSavedPages();
-	//var urll = retrievePage('848722047', '105704317');
-	//Components.utils.reportError(urll);
-	//gBrowser.addTab(urll);
-		
-	//deletePage('871122613', '12370611');
-	//deleteFolder('871122613');
+		storePage(savedName, folderValue, window.opener.content);
 	
-	window.close();
+		loadSavedPages(window.opener.document);
+	
+		window.close();
 	}
 	
 }
