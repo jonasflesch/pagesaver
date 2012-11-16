@@ -1,4 +1,4 @@
-var EXPORTED_SYMBOLS = [ "newFolder", "newPage", "deletePageFromIndex", "deleteFolderFromIndex" ];
+var EXPORTED_SYMBOLS = [ "newFolder", "newPage", "deletePageFromIndex", "deleteFolderFromIndex", "retrieveIndex" ];
 
 Components.utils.import("resource://pagesaver-modules/utils.js");
 
@@ -18,7 +18,9 @@ function newFolder(description){
 	
 		indexObject.index[0].folder.push(folder);
 	
-		saveIndexFile(indexObject);	
+		saveIndexFile(indexObject);
+
+		return folder['@id'];
 	} catch (err){
 		Components.utils.reportError(err);
 		Components.utils.reportError(err.message);
