@@ -6,19 +6,40 @@ const NS_XUL = "http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul";
 
 //This function handles populating our extension's menu's and submenu's with items
 function loadSavedPages(mainDocument){
-
+	
+	/*
 	if(typeof mainDocument === "undefined"){
 		mainDocument = window.document;
 	}
+	*/
+	
+	//gets main window using Firefox window mediator
+	var wm = Components.classes["@mozilla.org/appshell/window-mediator;1"].getService(Components.interfaces.nsIWindowMediator);
+	var mainWindow = wm.getMostRecentWindow("navigator:browser");
+	
+	//sets the mainDocument equal to the mainWindow.document
+	mainDocument = mainWindow.document;
 
 	//this starts by removing any existing elements in the lists before 
 	//adding the most current ones
 	var element = mainDocument.getElementById("loadMenupopup");
+	//if(element){
+	//	while(element.hasChildNodes()){
+	//		element.removeChild(element.firstChild);
+	//	}
+	//}
 	if(element){
 		while(element.hasChildNodes()){
+			while(element.firstChild.hasChildNodes()){
+				while(element.firstChild.firstChild.hasChildNodes()){
+					element.firstChild.firstChild.removeChild(element.firstChild.firstChild.firstChild);
+				}
+				element.firstChild.removeChild(element.firstChild.firstChild);
+			}
 			element.removeChild(element.firstChild);
 		}
 	}
+	
 	element = mainDocument.getElementById("deleteMenupopup");
 	if(element){
 		while(element.hasChildNodes()){
@@ -41,6 +62,7 @@ function loadSavedPages(mainDocument){
 		}catch(err){
 		}
 	}
+	
 	
 	//populates the delete menu, the ids correspond to the values we gave to each folder and file name, and the 
 	//descriptions are the user inputted values, we add the folders as menus first, and then the pages as
@@ -86,7 +108,7 @@ function addMenu(id, label, command, menuid, mainDocument){
     var menu = mainDocument.createElementNS(NS_XUL, "menu");
     menu.setAttribute("id", id);
     menu.setAttribute("label", label);
-
+	
 	if (menuid) {
     	let ($ = function(id) mainDocument.getElementById(id)) {
           $(menuid).appendChild(menu);
@@ -113,8 +135,11 @@ function addMenu(id, label, command, menuid, mainDocument){
 //listener function for the loadPage click event, takes the folder index and the 
 //page index and opens the selected page in a new tab
 function loadPage(){
-	var urll = retrievePage(this.id,this.parentContainer.id);
-    gBrowser.addTab(urll);
+	var url = retrievePage(this.id,this.parentContainer.id);
+	//gets main window using Firefox window mediator for accessing the active browser
+	var wm = Components.classes["@mozilla.org/appshell/window-mediator;1"].getService(Components.interfaces.nsIWindowMediator);
+	browser = wm.getMostRecentWindow("navigator:browser").getBrowser();
+	browser.selectedTab = browser.addTab(url);
 }
 
 //listener to delete a specified page, takes the folder index and page index and deletes the page
