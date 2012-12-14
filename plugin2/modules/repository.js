@@ -6,30 +6,24 @@ Components.utils.import("resource://pagesaver-modules/index.js");
 //the extension of the saved file
 const EXTENSION = "html";
 
-
 //stores the content from the file open in the tab inside to the hard drive, updating the index
 function storePage(description, folderIndex, content){
-	try {
-		var pageIndex = newPage(folderIndex, description);
-        
-        var folderFile = fileFolderPath(folderIndex, pageIndex);
-        
-        var file = filePath(folderIndex, pageIndex);
-        
-		var wbp = Components.classes['@mozilla.org/embedding/browser/nsWebBrowserPersist;1'].createInstance(Components.interfaces.nsIWebBrowserPersist);
-		
-		const nsIWBP = Components.interfaces.nsIWebBrowserPersist;
-		
-		//these are the same parameters from the default Save As of Firefox
-		var outputFlags = 0;
-		outputFlags |= wbp.ENCODE_FLAGS_ENCODE_BASIC_ENTITIES;
-		wbp.persistFlags = nsIWBP.PERSIST_FLAGS_AUTODETECT_APPLY_CONVERSION | nsIWBP.PERSIST_FLAGS_REPLACE_EXISTING_FILES | nsIWBP.PERSIST_FLAGS_FORCE_ALLOW_COOKIES;
-		
-		wbp.saveDocument(content.document, file, folderFile, null, outputFlags, 80);	
-	} catch (err){
-		Components.utils.reportError(err);
-		Components.utils.reportError(err.message);
-	}
+	var pageIndex = newPage(folderIndex, description);
+	
+	var folderFile = fileFolderPath(folderIndex, pageIndex);
+	
+	var file = filePath(folderIndex, pageIndex);
+	
+	var wbp = Components.classes['@mozilla.org/embedding/browser/nsWebBrowserPersist;1'].createInstance(Components.interfaces.nsIWebBrowserPersist);
+	
+	const nsIWBP = Components.interfaces.nsIWebBrowserPersist;
+	
+	//these are the same parameters from the default Save As of Firefox
+	var outputFlags = 0;
+	outputFlags |= wbp.ENCODE_FLAGS_ENCODE_BASIC_ENTITIES;
+	wbp.persistFlags = nsIWBP.PERSIST_FLAGS_AUTODETECT_APPLY_CONVERSION | nsIWBP.PERSIST_FLAGS_REPLACE_EXISTING_FILES | nsIWBP.PERSIST_FLAGS_FORCE_ALLOW_COOKIES;
+	
+	wbp.saveDocument(content.document, file, folderFile, null, outputFlags, 80);	
 }
 
 //return the File where the html file is saved in the hard drive
