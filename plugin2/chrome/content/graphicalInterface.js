@@ -7,12 +7,6 @@ const NS_XUL = "http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul";
 //This function handles populating our extension's menu's and submenu's with items
 function loadSavedPages(mainDocument){
 	
-	/*
-	if(typeof mainDocument === "undefined"){
-		mainDocument = window.document;
-	}
-	*/
-	
 	//gets main window using Firefox window mediator
 	var wm = Components.classes["@mozilla.org/appshell/window-mediator;1"].getService(Components.interfaces.nsIWindowMediator);
 	var mainWindow = wm.getMostRecentWindow("navigator:browser");
@@ -23,11 +17,7 @@ function loadSavedPages(mainDocument){
 	//this starts by removing any existing elements in the lists before 
 	//adding the most current ones
 	var element = mainDocument.getElementById("loadMenupopup");
-	//if(element){
-	//	while(element.hasChildNodes()){
-	//		element.removeChild(element.firstChild);
-	//	}
-	//}
+
 	if(element){
 		while(element.hasChildNodes()){
 			while(element.firstChild.hasChildNodes()){
@@ -48,16 +38,18 @@ function loadSavedPages(mainDocument){
 	}
 	
 	//gets the most recent copy of our index file
-	var myFolders = retrieveIndex();
+	var indexObject = retrieveIndex();
+	
+	var folder = indexObject.index[0].folder;
 	
 	//populates the load menu, the ids correspond to the values we gave to each folder and file name, and the 
 	//descriptions are the user inputted values, we add the folders as menus first, and then the pages as
 	//elements to the folders
-	for(var i =0;i<myFolders.index[0].folder.length;i++){
-		addMenu(myFolders.index[0].folder[i]['@id'],myFolders.index[0].folder[i]['@description'],null,'loadMenupopup',mainDocument);
+	for(var i =0;i<folder.length;i++){
+		addMenu(folder[i]['@id'],folder[i]['@description'],null,'loadMenupopup',mainDocument);
 		try{
-			for(var j=0;j<myFolders.index[0].folder[i].page.length;j++){
-				addItemToMenu(myFolders.index[0].folder[i].page[j]['@id'],myFolders.index[0].folder[i].page[j]['@description'],loadPage,myFolders.index[0].folder[i]['@id']+'popup',null,mainDocument);
+			for(var j=0;j<folder[i].page.length;j++){
+				addItemToMenu(folder[i].page[j]['@id'],folder[i].page[j]['@description'],loadPage,folder[i]['@id']+'popup',null,mainDocument);
 			}
 		}catch(err){
 		}
@@ -67,12 +59,12 @@ function loadSavedPages(mainDocument){
 	//populates the delete menu, the ids correspond to the values we gave to each folder and file name, and the 
 	//descriptions are the user inputted values, we add the folders as menus first, and then the pages as
 	//elements to the folders, we also add a menu item to delete the whole folder of entries
-	for(var i =0;i<myFolders.index[0].folder.length;i++){
-		addMenu(myFolders.index[0].folder[i]['@id']+'delete',myFolders.index[0].folder[i]['@description'],null,'deleteMenupopup',mainDocument);
-		addItemToMenu(myFolders.index[0].folder[i]['@id']+'deletefolder',"Delete Folder",deleteFolderCall,myFolders.index[0].folder[i]['@id']+'deletepopup',null,mainDocument);
+	for(var i =0;i<folder.length;i++){
+		addMenu(folder[i]['@id']+'delete',folder[i]['@description'],null,'deleteMenupopup',mainDocument);
+		addItemToMenu(folder[i]['@id']+'deletefolder',"Delete Folder",deleteFolderCall,folder[i]['@id']+'deletepopup',null,mainDocument);
 		try{
-			for(var j=0;j<myFolders.index[0].folder[i].page.length;j++){
-				addItemToMenu(myFolders.index[0].folder[i].page[j]['@id'],myFolders.index[0].folder[i].page[j]['@description'],deletePageCall,myFolders.index[0].folder[i]['@id']+'deletepopup',null,mainDocument);
+			for(var j=0;j<folder[i].page.length;j++){
+				addItemToMenu(folder[i].page[j]['@id'],folder[i].page[j]['@description'],deletePageCall,folder[i]['@id']+'deletepopup',null,mainDocument);
 			}
 		}catch(err){
 		}
@@ -129,7 +121,6 @@ function addMenu(id, label, command, menuid, mainDocument){
     	}
     }
 	
-	
 }
 
 //listener function for the loadPage click event, takes the folder index and the 
@@ -153,9 +144,13 @@ function deletePageCall(){
 //listener to delete an entire folder, takes the folder index and deletes the folder from the index
 //file and from disk, after something is deleted we update the gui to reflect the current saved pages
 function deleteFolderCall(){
-	var tempId = this.parentContainer.id.substring(0,this.id.lastIndexOf('deletefolder'));
-	deleteFolder(tempId);
-	loadSavedPages(window.document);
+	try {
+		var tempId = this.parentContainer.id.substring(0,this.id.lastIndexOf('deletefolder'));
+		deleteFolder(tempId);
+		loadSavedPages(window.document);
+	} catch(err){
+		alert(err.message);
+	}
 }
 
 //called whenever the save page option is selected in the menu, opens a new window that allows the
@@ -164,8 +159,7 @@ function saveWindow(){
 	try {
 		window.open("chrome://pagesaver/content/savePage.xul", "bmarks", "chrome,width=700,height=50,centerscreen");
 	} catch (err){
-		Components.utils.reportError(err);
-		Components.utils.reportError(err.message);
+		alert(err.message);
 	}
 }
 	   
@@ -173,15 +167,20 @@ function saveWindow(){
 //displayed.  It gathers the list of folders from the index file and puts them in alphabetic order, then 
 //adds each of them to an editable combo box on the window for the user to select or add their own.
 function onWindowLoad(){
-	var myFolders=retrieveIndex();
+	var indexObject=retrieveIndex();
 	var myArray = new Array();
-	for(var i =0;i<myFolders.index[0].folder.length;i++){
+	
+	var folder = indexObject.index[0].folder;
+	
+	for(var i = 0;i<folder.length;i++){
 		myArray[i]=new Array(2);
-		myArray[i][0] = myFolders.index[0].folder[i]['@description'];
-		myArray[i][1] = myFolders.index[0].folder[i]['@id'];
+		myArray[i][0] = folder[i]['@description'];
+		myArray[i][1] = folder[i]['@id'];
 	}
+	
 	myArray.sort();
-	for(var i =0;i<myArray.length;i++){
+	
+	for(var i = 0;i<myArray.length;i++){
 		document.getElementById("folderList").appendItem(myArray[i][0], myArray[i][1]);
 	}
 }
@@ -192,20 +191,19 @@ function onWindowLoad(){
 //the call to storePage() is in the repository, and after that we update the visible pages in our gui
 //by calling loadSavedPages() once more, and then closing the window.
 function savePage(){
-	var savedName = document.getElementById("pageDescription").value; 
-	var currentMenuName = document.getElementById("folderList").value;
-	if(!currentMenuName){
-		Components.utils.reportError("no folder selected");
-	}
-	else if(!savedName){
-		Components.utils.reportError("no description entered");
-	}
-	else{
-		try{
+	try {
+		var savedName = document.getElementById("pageDescription").value; 
+		var currentMenuName = document.getElementById("folderList").value;
+		validateSavePage(savedName, currentMenuName);
+		
+		try {
 			var folderValue = document.getElementById("folderList").selectedItem.value;
-		}catch(err){
+		} catch(err) {
+			//no item selected
 			folderValue=null;
 		}
+		
+		//checks if no item was selected or the item selected is null
 		if(folderValue==null){
 			folderValue = newFolder(currentMenuName);
 		}
@@ -215,6 +213,26 @@ function savePage(){
 		loadSavedPages(window.opener.document);
 	
 		window.close();
+	} catch(err){
+		alert(err.message);
 	}
-	
+}
+
+//encloses the validation for the save page
+function validateSavePage(savedName, currentMenuName){
+	if(!currentMenuName){
+		throw {
+			name:        "Validation Error",
+			level:       "Show Stopper",
+			message:     "No folder selected.",
+			htmlMessage: "No folder selected."
+		}
+	} else if(!savedName){
+		throw {
+			name:        "Validation Error",
+			level:       "Show Stopper",
+			message:     "No description entered.",
+			htmlMessage: "No description entered."
+		}
+	}
 }

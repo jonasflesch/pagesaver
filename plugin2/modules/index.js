@@ -7,67 +7,56 @@ const RANDOMSIZE = 1000000000;
 
 //creates a new folder in the index
 function newFolder(description){
-	try {
-		Components.utils.reportError('newFolder call');
-		var folder = new Object();
-		folder['@description'] = description;
-		
-		var indexObject = retrieveIndex();
-		
-		Components.utils.reportError(indexObject.index[0].folder);
-		
-		folder['@id'] = generateRandomIdForPageOrFolder(indexObject.index[0].folder);
+	var folder = new Object();
+	folder['@description'] = description;
 	
-		indexObject.index[0].folder.push(folder);
+	var indexObject = retrieveIndex();
 	
-		saveIndexFile(indexObject);
+	folder['@id'] = generateRandomIdForPageOrFolder(indexObject.index[0].folder);
 
-		return folder['@id'];
-	} catch (err){
-		Components.utils.reportError(err);
-		Components.utils.reportError(err.message);
-	}
+	indexObject.index[0].folder.push(folder);
+
+	saveIndexFile(indexObject);
+
+	return folder['@id'];
 }
 
 //creates a new page into the index, returning the generated ID
 function newPage(folderIndex, description){
-	try {
-		var page = new Object();
-		page['@description'] = description;
-		
-		var indexObject = retrieveIndex();
+	var page = new Object();
+	page['@description'] = description;
 	
-		Components.utils.reportError(indexObject.index[0].folder.length);
+	var indexObject = retrieveIndex();
 	
-		for(var i=0;i<indexObject.index[0].folder.length;i++){
-			Components.utils.reportError(indexObject.index[0].folder[i]['@id']);
-			if(indexObject.index[0].folder[i]['@id'] == folderIndex){
-		        if(!indexObject.index[0].folder[i].hasOwnProperty('page')) {
-		        	indexObject.index[0].folder[i].page = new Array();
-		        }
-		        page['@id'] = generateRandomIdForPageOrFolder(indexObject.index[0].folder[i].page);
-		        
-				indexObject.index[0].folder[i].page.push(page);
-				break;
+	var folder = indexObject.index[0].folder;
+
+	for(var i=0;i<folder.length;i++){
+		if(folder[i]['@id'] == folderIndex){
+			if(!folder[i].hasOwnProperty('page')) {
+				folder[i].page = new Array();
 			}
+			page['@id'] = generateRandomIdForPageOrFolder(folder[i].page);
+			
+			folder[i].page.push(page);
+			break;
 		}
-		saveIndexFile(indexObject);
-		
-		return page['@id'];
-	} catch (err){
-		Components.utils.reportError(err);
-		Components.utils.reportError(err.message);
 	}
+	saveIndexFile(indexObject);
+	
+	return page['@id'];
 }
 
 //deletes a page from the index
 function deletePageFromIndex(folderIndex, pageIndex){
 	var indexObject = retrieveIndex();
-	for(var i=0;i < indexObject.index[0].folder.length;i++){
-		if(indexObject.index[0].folder[i]['@id'] == folderIndex){
-			for(var j=0;j < indexObject.index[0].folder[i].page.length;j++){
-				if(indexObject.index[0].folder[i].page[j]['@id'] == pageIndex){
-					indexObject.index[0].folder[i].page.splice(j,1);
+	
+	var folder = indexObject.index[0].folder;
+	
+	for(var i=0;i < folder.length;i++){
+		if(folder[i]['@id'] == folderIndex){
+			for(var j=0;j < folder[i].page.length;j++){
+				if(folder[i].page[j]['@id'] == pageIndex){
+					folder[i].page.splice(j,1);
 					break;
 				}
 			}
@@ -80,9 +69,12 @@ function deletePageFromIndex(folderIndex, pageIndex){
 //deletes a folder from the index
 function deleteFolderFromIndex(folderIndex){
 	var indexObject = retrieveIndex();
-	for(var i=0;i < indexObject.index[0].folder.length;i++){
-		if(indexObject.index[0].folder[i]['@id'] == folderIndex){
-			indexObject.index[0].folder.splice(i,1);
+	
+	var folder = indexObject.index[0].folder;
+	
+	for(var i=0;i < folder.length;i++){
+		if(folder[i]['@id'] == folderIndex){
+			folder.splice(i,1);
 			break;
 		}
 	}
@@ -107,112 +99,72 @@ function generateRandomIdForPageOrFolder(pageOrFolder){
 
 //gets the index as an object from the profile directory
 function retrieveIndex(){
-	try {
-		Components.utils.reportError('retrieveIndex call');
+	var file = indexFile();
+	
+	if(!file.exists()){
+		var indexObject = new Object();
+		indexObject.index = new Array();
+		indexObject.index.push(new Object());
+		indexObject.index[0].folder = new Array();
+	} else {
+		Components.utils.import("resource://gre/modules/NetUtil.jsm");
 		
-		var file = indexFile();
+		var data = "";
+		var fstream = Components.classes["@mozilla.org/network/file-input-stream;1"].createInstance(Components.interfaces.nsIFileInputStream);
+		var cstream = Components.classes["@mozilla.org/intl/converter-input-stream;1"].createInstance(Components.interfaces.nsIConverterInputStream);
+		fstream.init(file, -1, 0, 0);
+		cstream.init(fstream, "UTF-8", 0, 0);
 		
-		if(!file.exists()){
-			var indexObject = new Object();
+		let (str = {}) {
+		  let read = 0;
+		  do { 
+			read = cstream.readString(0xffffffff, str);
+			data += str.value;
+		  } while (read != 0);
+		}
+		cstream.close();
+		
+		var domParser = Components.classes["@mozilla.org/xmlextras/domparser;1"].createInstance(Components.interfaces.nsIDOMParser);
+		
+		var dataAsXml = domParser.parseFromString(data,"text/xml");
+		var indexObject = getJXONTree(dataAsXml);
+		
+		if(!indexObject.hasOwnProperty('index')) {
+			//create new index
 			indexObject.index = new Array();
 			indexObject.index.push(new Object());
-			indexObject.index[0].folder = new Array();
-		} else {
-			Components.utils.import("resource://gre/modules/NetUtil.jsm");
-			
-			var data = "";
-			var fstream = Components.classes["@mozilla.org/network/file-input-stream;1"].createInstance(Components.interfaces.nsIFileInputStream);
-			var cstream = Components.classes["@mozilla.org/intl/converter-input-stream;1"].createInstance(Components.interfaces.nsIConverterInputStream);
-			fstream.init(file, -1, 0, 0);
-			cstream.init(fstream, "UTF-8", 0, 0);
-			
-			let (str = {}) {
-			  let read = 0;
-			  do { 
-			    read = cstream.readString(0xffffffff, str);
-			    data += str.value;
-			  } while (read != 0);
-			}
-			cstream.close();
-			
-			var domParser = Components.classes["@mozilla.org/xmlextras/domparser;1"].createInstance(Components.interfaces.nsIDOMParser);
-			
-			var dataAsXml = domParser.parseFromString(data,"text/xml");
-			var indexObject = getJXONTree(dataAsXml);
-			
-			if(!indexObject.hasOwnProperty('index')) {
-				Components.utils.reportError('no index, creating');
-				indexObject.index = new Array();
-				indexObject.index.push(new Object());
-			}
-			if(!indexObject.index[0].hasOwnProperty('folder')) {
-				indexObject.index[0].folder = new Array();
-			}
-
 		}
-		Components.utils.reportError(indexObject.toSource());
-		
-		return indexObject;
-	} catch (err){
-		Components.utils.reportError(err);
-		Components.utils.reportError(err.message);
+		if(!indexObject.index[0].hasOwnProperty('folder')) {
+			indexObject.index[0].folder = new Array();
+		}
+
 	}
+	
+	return indexObject;
 }
 
 // saves the object serialized as a XML into the profile directory
 function saveIndexFile(indexObject){
-	try {
-		var xmlDoc = createXML(indexObject);
-		
-		var xmlSerializer = Components.classes["@mozilla.org/xmlextras/xmlserializer;1"].createInstance(Components.interfaces.nsIDOMSerializer);
-		
-		var xmlAsString = xmlSerializer.serializeToString(xmlDoc);
-		
-		var file = indexFile();
-		
-		/*Components.utils.import("resource://gre/modules/NetUtil.jsm");
-		Components.utils.import("resource://gre/modules/FileUtils.jsm");
+	var xmlDoc = createXML(indexObject);
 	
-		var xmlDoc = createXML(indexObject);
-		
-		var xmlSerializer = Components.classes["@mozilla.org/xmlextras/xmlserializer;1"].createInstance(Components.interfaces.nsIDOMSerializer);
-		
-		var xmlAsString = xmlSerializer.serializeToString(xmlDoc);
-		
-		var file = indexFile();
- 
-		var ostream = FileUtils.openSafeFileOutputStream(file)
- 
-		var converter = Components.classes["@mozilla.org/intl/scriptableunicodeconverter"].createInstance(Components.interfaces.nsIScriptableUnicodeConverter);
-		converter.charset = "UTF-8";
-		var istream = converter.convertToInputStream(xmlAsString);
- 
+	var xmlSerializer = Components.classes["@mozilla.org/xmlextras/xmlserializer;1"].createInstance(Components.interfaces.nsIDOMSerializer);
+	
+	var xmlAsString = xmlSerializer.serializeToString(xmlDoc);
+	
+	var file = indexFile();
+	
+	// file is nsIFile, data is a string		
+	var foStream = Components.classes["@mozilla.org/network/file-output-stream;1"].createInstance(Components.interfaces.nsIFileOutputStream);
 
-		NetUtil.asyncCopy(istream, ostream, function(status) {
-			if (!Components.isSuccessCode(status)) {
-				return;
-			}
-		});*/
-		// file is nsIFile, data is a string
-		var foStream = Components.classes["@mozilla.org/network/file-output-stream;1"].createInstance(Components.interfaces.nsIFileOutputStream);
- 
-		// use 0x02 | 0x10 to open file for appending.
-		foStream.init(file, 0x02 | 0x08 | 0x20, 0666, 0); 
-		//foStream.init(file, foStream.PR_WRONLY | foStream.PR_CREATE_FILE | foStream.PR_TRUNCATE, 0666, 0); 
-		// write, create, truncate
-		// In a c file operation, we have no need to set file mode with or operation,
-		// directly using "r" or "w" usually.
- 
-		// if you are sure there will never ever be any non-ascii text in data you can 
-		// also call foStream.write(data, data.length) directly
-		var converter = Components.classes["@mozilla.org/intl/converter-output-stream;1"].createInstance(Components.interfaces.nsIConverterOutputStream);
-		converter.init(foStream, "UTF-8", 0, 0);
-		converter.writeString(xmlAsString);
-		converter.close(); // this closes foStream
-	} catch (err){
-		Components.utils.reportError(err);
-		Components.utils.reportError(err.message);
-	}
+	// use write only | create file | truncate
+	foStream.init(file, 0x02 | 0x08 | 0x20, 0666, 0); 
+
+	// write, create, truncate
+
+	var converter = Components.classes["@mozilla.org/intl/converter-output-stream;1"].createInstance(Components.interfaces.nsIConverterOutputStream);
+	converter.init(foStream, "UTF-8", 0, 0);
+	converter.writeString(xmlAsString);
+	converter.close(); // this closes foStream
 }
 
 //returns the file for the index.xml of the plugin
